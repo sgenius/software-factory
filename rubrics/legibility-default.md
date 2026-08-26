@@ -33,6 +33,8 @@ override wins.
   expression (chained `&&`/`||` for control flow, multi-assignment
   one-liners). If it needs a comment to explain what it does, it's not
   legible — split it into named steps instead.
+- In JavaScript/TypeScript, all `if` clauses must have brackets.
+- One-liner `if`s are forbidden unless the file already includes them.
 
 ## 4. Structure & consistency
 - New code matches the patterns already present in the file/module it's
@@ -52,6 +54,7 @@ override wins.
   X flow", "fix for bug #123"). That belongs in the commit message.
 - Every public function/exported symbol has a one-line summary of intent
   only if the name doesn't already make it obvious.
+- Follow JSDoc where applicable.
 
 ## 6. Diff hygiene
 - The diff touches only files listed in the Plan's `filesToTouch`
