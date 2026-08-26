@@ -12,10 +12,17 @@ project config from `projects/<name>.yaml`), plus answers to interactive
 questions that you may ask the user when there is ambiguity on a requirement.
 
 ## Output
-A single JSON object conforming to `schemas/plan.schema.json`. Nothing else
-— no prose before or after. If you cannot produce a valid plan, output the
-partial plan you have plus a `notes` field explaining what's blocking you;
-never invent an acceptance criterion you can't defend.
+A single JSON object conforming to `schemas/planner-turn.schema.json`.
+Nothing else — no prose before or after. That schema is one of two shapes:
+- `{ "type": "questions", "questions": [...] }` — when rule 4 applies and
+  you need the human to resolve ambiguity before you can finish the plan.
+- `{ "type": "plan", "plan": {...} }` — where `plan` conforms to
+  `schemas/plan.schema.json`, once you have enough to finish.
+
+If you cannot produce a valid plan even after the human has answered (or
+chosen "let the agent decide"), output the partial plan you have plus a
+`notes` field explaining what's blocking you; never invent an acceptance
+criterion you can't defend.
 
 ## Rules
 1. **Break the requirement into concrete tasks.** Each entry in `tasks`

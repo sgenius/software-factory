@@ -33,7 +33,10 @@ function compile(fileName: string): ValidateFunction {
   return ajv.compile(loadSchema(fileName));
 }
 
+// plan.schema.json must compile first: planner-turn.schema.json $refs it by
+// $id, and ajv can only resolve a $ref to a schema already added.
 export const validatePlan = compile("plan.schema.json");
+export const validatePlannerTurn = compile("planner-turn.schema.json");
 export const validateReviewFinding = compile("review-finding.schema.json");
 export const validateTaskState = compile("task-state.schema.json");
 

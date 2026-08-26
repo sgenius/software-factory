@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1"
   },

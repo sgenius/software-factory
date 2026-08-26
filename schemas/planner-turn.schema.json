@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://software-factory.local/schemas/planner-turn.schema.json",
+  "title": "PlannerTurn",
+  "description": "One raw turn of Planner LLM output: either it needs clarification from the human, or it has a finished Plan. Not the shape of the persisted plan.json artifact — that's plan.schema.json, unwrapped, once a \"plan\" turn is reached.",
+  "type": "object",
+  "required": ["taskId", "type"],
+  "oneOf": [
+    {
+      "type": "object",
+      "required": ["type", "questions"],
+      "additionalProperties": false,
+      "properties": {
+        "taskId": { "type": "string" },
+        "type": { "const": "questions" },
+        "questions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/plannerQuestion" }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": ["type", "plan"],
+      "additionalProperties": false,
+      "properties": {
+        "taskId": { "type": "string" },
+        "type": { "const": "plan" },
+        "plan": { "$ref": "https://software-factory.local/schemas/plan.schema.json" }
+      }
+    }
+  ],
+  "$defs": {
+    "plannerQuestion": {
+      "type": "object",
+      "required": ["id", "header", "question", "options"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "header": {
+          "type": "string",
+          "description": "Very short label for the question, e.g. \"Auth method\"."
+        },
+        "question": { "type": "string" },
+        "options": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 4,
+          "description": "By convention: a recommended option first, plus a \"let the agent decide\" option (see agents/planner/system-prompt.md rule 4).",
+          "items": {
+            "type": "object",
+            "required": ["label"],
+            "additionalProperties": false,
+            "properties": {
+              "label": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

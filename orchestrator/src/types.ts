@@ -74,3 +74,25 @@ export interface TaskState {
   failureReason?: string;
   history: HistoryEntry[];
 }
+
+export interface PlannerQuestionOption {
+  label: string;
+  description?: string;
+}
+
+export interface PlannerQuestion {
+  id: string;
+  header: string;
+  question: string;
+  options: PlannerQuestionOption[];
+}
+
+export interface PlannerAnswer {
+  questionId: string;
+  selectedLabel: string;
+  notes?: string;
+}
+
+export type PlannerTurn =
+  | { taskId: string; type: "questions"; questions: PlannerQuestion[] }
+  | { taskId: string; type: "plan"; plan: Plan };

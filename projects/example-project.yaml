@@ -29,6 +29,9 @@ budget:
   maxTokensPerTask: 2000000
   maxCostUsdPerTask: 20
   maxFixReviewCycles: 3
+  # How many times the Planner may ask the human clarifying questions
+  # (agents/planner/system-prompt.md rule 4) before the task fails.
+  maxPlanningQuestionRounds: 3
 
 humanApproval:
   # phase1: every task stops at the human gate.
