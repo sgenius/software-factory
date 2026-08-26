@@ -25,9 +25,12 @@ export async function runReviewPhase(opts: ReviewPhaseOptions): Promise<ReviewRe
     rubricText: opts.rubricText,
   });
 
+  // Cycle-suffixed stepId: see the comment on the same pattern in
+  // codingPhase.ts — this phase can now run more than once per task.
+  const cycle = opts.stateMachine.getState().fixReviewCycles;
   const hasBlocking = reviewResult.findings.some((finding) => finding.severity === "blocking");
   const event = hasBlocking ? { type: "REVIEW_NEEDS_FIXES" as const } : { type: "REVIEW_CLEAN" as const };
-  opts.stateMachine.apply(`${opts.taskId}:review:result`, event);
+  opts.stateMachine.apply(`${opts.taskId}:review:result:cycle-${cycle}`, event);
 
   return reviewResult;
 }

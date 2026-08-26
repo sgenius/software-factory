@@ -12,7 +12,7 @@ export type TaskEvent =
   | { type: "REVIEW_CLEAN" }
   | { type: "REVIEW_NEEDS_FIXES" }
   | { type: "HUMAN_APPROVED" }
-  | { type: "HUMAN_REJECTED" }
+  | { type: "HUMAN_REJECTED"; reason?: string }
   | { type: "HUMAN_REQUESTED_CHANGES" }
   | { type: "STAGE_FAILED"; reason: string };
 
@@ -124,7 +124,7 @@ export class TaskStateMachine {
 
       case "human_gate":
         if (event.type === "HUMAN_APPROVED") this.moveTo(stepId, "done", event.type);
-        else if (event.type === "HUMAN_REJECTED") this.forceFail(stepId, "human_rejected");
+        else if (event.type === "HUMAN_REJECTED") this.forceFail(stepId, event.reason ?? "human_rejected");
         else if (event.type === "HUMAN_REQUESTED_CHANGES") this.loopToCoding(stepId, event.type);
         else this.invalidEvent(event);
         return;

@@ -15,6 +15,12 @@ export {
   CliHumanInteractionChannel,
 } from "./humanInteraction.js";
 export {
+  type HumanGateRequest,
+  type HumanGateDecision,
+  type HumanGateChannel,
+  CliHumanGateChannel,
+} from "./humanGate.js";
+export {
   type PlannerAgentInput,
   type PlannerAgentClient,
   ClaudePlannerAgentClient,

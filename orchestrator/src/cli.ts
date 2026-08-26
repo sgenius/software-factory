@@ -6,6 +6,7 @@ import { ClaudeTestAuthorAgentClient } from "./agents/testAuthorAgent.js";
 import { ClaudeTestResultAgentClient } from "./agents/testResultAgent.js";
 import { ClaudeReviewerAgentClient } from "./agents/reviewerAgent.js";
 import { CliHumanInteractionChannel } from "./humanInteraction.js";
+import { CliHumanGateChannel } from "./humanGate.js";
 import { runTask } from "./taskRunner.js";
 import { taskWorkspacePath } from "./workspace.js";
 
@@ -46,6 +47,7 @@ async function main(): Promise<void> {
   const testResultClient = new ClaudeTestResultAgentClient(anthropic);
   const reviewerClient = new ClaudeReviewerAgentClient(anthropic);
   const interactionChannel = new CliHumanInteractionChannel();
+  const humanGateChannel = new CliHumanGateChannel();
 
   const taskState = await runTask({
     taskId: args.taskId,
@@ -57,6 +59,7 @@ async function main(): Promise<void> {
     testResultClient,
     reviewerClient,
     interactionChannel,
+    humanGateChannel,
   });
 
   const taskDir = taskWorkspacePath(args.taskId);
@@ -66,15 +69,10 @@ async function main(): Promise<void> {
   console.log(`Test results: ${taskDir}/test-results.json`);
   console.log(`Task state: stage="${taskState.stage}", status="${taskState.status}".`);
 
-  if (taskState.stage === "coding") {
-    console.log(
-      "Tests or review sent this task back to \"coding\" for another fix cycle — automatic fix-retry isn't wired up yet.",
-    );
-  } else if (taskState.stage === "human_gate") {
-    const reason = taskState.escalated
-      ? "the fix/review cycle cap was reached"
-      : "review came back clean";
-    console.log(`Task is at the human gate (${reason}) — human-gate wiring isn't built yet.`);
+  if (taskState.stage === "done") {
+    console.log("Approved and done.");
+  } else if (taskState.stage === "failed") {
+    console.log(`Failed: ${taskState.failureReason ?? "unknown reason"}`);
   }
 }
 

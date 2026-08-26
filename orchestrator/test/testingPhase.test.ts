@@ -149,4 +149,64 @@ describe("runTestingPhase", () => {
     expect(stateMachine.getState().stage).toBe("human_gate");
     expect(stateMachine.getState().escalated).toBe(true);
   });
+
+  it("applies its event correctly across two retry legs without a stepId collision", async () => {
+    tempDir = mkdtempSync(path.join(tmpdir(), "sf-testing-test-"));
+    await execFileAsync("git", ["init", tempDir]);
+
+    const testAuthorClient = new ScriptedTestAuthorClient();
+    const failingResult: TestResult = {
+      taskId: "task-1",
+      results: [{ criterionId: "a1", passed: false, reason: "assertion failed" }],
+      testsRun: [],
+    };
+    const passingResult: TestResult = {
+      taskId: "task-1",
+      results: [{ criterionId: "a1", passed: true }],
+      testsRun: [],
+    };
+    let call = 0;
+    const testResultClient: TestResultAgentClient = {
+      async runInterpretation(): Promise<TestResult> {
+        call += 1;
+        return call === 1 ? failingResult : passingResult;
+      },
+    };
+    const stateMachine = new TaskStateMachine("task-1", { maxTokens: 1_000_000, maxCostUsd: 100 }, 3);
+    stateMachine.apply("s1", { type: "PLAN_READY" });
+    stateMachine.apply("s2", { type: "CODE_READY" });
+
+    await runTestingPhase({
+      taskId: "task-1",
+      plan: samplePlan,
+      repoDir: tempDir,
+      rubricText: "r",
+      testCommand: 'node -e "process.exit(1)"',
+      testCommandTimeoutMs: 10_000,
+      stateMachine,
+      testAuthorClient,
+      testResultClient,
+    });
+    expect(stateMachine.getState().stage).toBe("coding");
+
+    stateMachine.apply("s3", { type: "CODE_READY" });
+    expect(stateMachine.getState().stage).toBe("testing");
+
+    await runTestingPhase({
+      taskId: "task-1",
+      plan: samplePlan,
+      repoDir: tempDir,
+      rubricText: "r",
+      testCommand: 'node -e "process.exit(0)"',
+      testCommandTimeoutMs: 10_000,
+      stateMachine,
+      testAuthorClient,
+      testResultClient,
+    });
+
+    // If the second call's stepId collided with the first, this apply
+    // would be a silent no-op and the stage would still read "testing".
+    expect(stateMachine.getState().stage).toBe("review");
+    expect(call).toBe(2);
+  });
 });

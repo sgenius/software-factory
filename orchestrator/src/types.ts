@@ -114,3 +114,9 @@ export interface ReviewResult {
   findings: ReviewFinding[];
   confidence: number;
 }
+
+/** What Coder is handed on a fix cycle — see agents/coder/system-prompt.md rule 5. */
+export type CoderFeedback =
+  | { kind: "test_failure"; testResult: TestResult }
+  | { kind: "review_findings"; reviewResult: ReviewResult }
+  | { kind: "human_feedback"; feedback: string };

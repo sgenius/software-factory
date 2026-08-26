@@ -13,9 +13,10 @@ import type { TestAuthorAgentClient } from "./agents/testAuthorAgent.js";
 import type { TestResultAgentClient } from "./agents/testResultAgent.js";
 import type { ReviewerAgentClient } from "./agents/reviewerAgent.js";
 import type { HumanInteractionChannel } from "./humanInteraction.js";
+import type { HumanGateChannel, HumanGateDecision } from "./humanGate.js";
 import type { ProjectConfig } from "./projectConfig.js";
 import { DEFAULT_WORKSPACE_ROOT, ensureTaskWorkspace, writeTaskArtifact, writeTaskTextFile } from "./workspace.js";
-import type { TaskState } from "./types.js";
+import type { CoderFeedback, ReviewResult, TaskState, TestResult } from "./types.js";
 
 export interface RunTaskOptions {
   taskId: string;
@@ -33,17 +34,25 @@ export interface RunTaskOptions {
   reviewerClient: ReviewerAgentClient;
   /** Real CliHumanInteractionChannel from cli.ts; a fake/scripted channel in tests. */
   interactionChannel: HumanInteractionChannel;
+  /** Real CliHumanGateChannel from cli.ts; a fake/scripted channel in tests. */
+  humanGateChannel: HumanGateChannel;
   workspaceRoot?: string;
 }
 
+interface HumanGateLogEntry {
+  round: number;
+  decision: HumanGateDecision;
+  timestamp: string;
+}
+
 /**
- * Runs one task through planning, coding, testing, and (if tests pass)
- * review — persisting plan.json / planning-transcript.json / diff.patch /
- * test-results.json / review.json / task-state.json throughout. Stops as
- * soon as the state machine lands anywhere other than "review" after
- * testing: either "coding" (a fix cycle is needed) or "human_gate"
- * (escalated past the cycle cap) — the automatic fix-retry loop and the
- * human gate itself aren't wired up yet.
+ * Runs one task start to finish: planning, then a loop over
+ * coding/testing/review/human_gate driven by the state machine's own
+ * stage, until it reaches "done" or "failed". A failed test, a blocking
+ * review finding, or a human requesting changes all feed back into
+ * Coder's next pass the same way (CoderFeedback) and re-enter the same
+ * loop — the fix-cycle cap and human_gate escalation are enforced by
+ * TaskStateMachine itself, not here.
  */
 export async function runTask(opts: RunTaskOptions): Promise<TaskState> {
   const root = opts.workspaceRoot ?? DEFAULT_WORKSPACE_ROOT;
@@ -83,49 +92,107 @@ export async function runTask(opts: RunTaskOptions): Promise<TaskState> {
     const repoDir = await prepareRepoWorkspace(opts.taskId, opts.projectConfig, root);
     const rubricText = readFileSync(path.join(REPO_ROOT, opts.projectConfig.rubric.path), "utf-8");
 
-    await runCodingPhase({
-      taskId: opts.taskId,
-      plan,
-      repoDir,
-      rubricText,
-      stateMachine,
-      coderClient: opts.coderClient,
-    });
-    await persistTaskState(opts.taskId, stateMachine, root);
+    let feedback: CoderFeedback | undefined;
+    let diff = "";
+    let testResult: TestResult | undefined;
+    let reviewResult: ReviewResult | undefined;
+    const humanGateLog: HumanGateLogEntry[] = [];
 
-    const { testResult, diff } = await runTestingPhase({
-      taskId: opts.taskId,
-      plan,
-      repoDir,
-      rubricText,
-      testCommand: opts.projectConfig.stack.testCommand,
-      testCommandTimeoutMs: opts.projectConfig.budget.testCommandTimeoutMs,
-      stateMachine,
-      testAuthorClient: opts.testAuthorClient,
-      testResultClient: opts.testResultClient,
-    });
-    await writeTaskTextFile(opts.taskId, "diff.patch", diff, root);
-    await writeTaskArtifact(opts.taskId, "test-results.json", testResult, root);
-    await persistTaskState(opts.taskId, stateMachine, root);
+    while (true) {
+      const stage = stateMachine.getState().stage;
 
-    if (stateMachine.getState().stage !== "review") {
-      // Tests failed: looped back to "coding", or escalated to
-      // "human_gate" past the cycle cap. Neither the fix-retry loop nor
-      // the human gate is wired up yet — stop here.
+      if (stage === "coding") {
+        await runCodingPhase({
+          taskId: opts.taskId,
+          plan,
+          repoDir,
+          rubricText,
+          stateMachine,
+          coderClient: opts.coderClient,
+          feedback,
+        });
+        feedback = undefined;
+        // A fresh coding pass invalidates any review from a prior cycle —
+        // if this leg's testing fails before ever reaching review again,
+        // the human gate must not present stale findings from an earlier
+        // diff.
+        reviewResult = undefined;
+        await persistTaskState(opts.taskId, stateMachine, root);
+        continue;
+      }
+
+      if (stage === "testing") {
+        const testingResult = await runTestingPhase({
+          taskId: opts.taskId,
+          plan,
+          repoDir,
+          rubricText,
+          testCommand: opts.projectConfig.stack.testCommand,
+          testCommandTimeoutMs: opts.projectConfig.budget.testCommandTimeoutMs,
+          stateMachine,
+          testAuthorClient: opts.testAuthorClient,
+          testResultClient: opts.testResultClient,
+        });
+        testResult = testingResult.testResult;
+        diff = testingResult.diff;
+        await writeTaskTextFile(opts.taskId, "diff.patch", diff, root);
+        await writeTaskArtifact(opts.taskId, "test-results.json", testResult, root);
+        await persistTaskState(opts.taskId, stateMachine, root);
+        if (stateMachine.getState().stage === "coding") {
+          feedback = { kind: "test_failure", testResult };
+        }
+        continue;
+      }
+
+      if (stage === "review") {
+        reviewResult = await runReviewPhase({
+          taskId: opts.taskId,
+          plan,
+          diff,
+          rubricText,
+          stateMachine,
+          reviewerClient: opts.reviewerClient,
+        });
+        await writeTaskArtifact(opts.taskId, "review.json", reviewResult, root);
+        await persistTaskState(opts.taskId, stateMachine, root);
+        if (stateMachine.getState().stage === "coding") {
+          feedback = { kind: "review_findings", reviewResult };
+        }
+        continue;
+      }
+
+      if (stage === "human_gate") {
+        // testResult is always set by the time human_gate is reachable:
+        // every path into it (REVIEW_CLEAN, or a loopToCoding escalation
+        // from testing or review) passes through "testing" first.
+        const decision = await opts.humanGateChannel.requestDecision({
+          taskId: opts.taskId,
+          plan,
+          diff,
+          testResult: testResult!,
+          reviewResult,
+          taskState: stateMachine.getState(),
+        });
+        const round = humanGateLog.length;
+        humanGateLog.push({ round, decision, timestamp: new Date().toISOString() });
+        await writeTaskArtifact(opts.taskId, "human-gate-log.json", humanGateLog, root);
+
+        const stepId = `${opts.taskId}:human_gate:${decision.type}:round-${round}`;
+        if (decision.type === "approved") {
+          stateMachine.apply(stepId, { type: "HUMAN_APPROVED" });
+        } else if (decision.type === "rejected") {
+          stateMachine.apply(stepId, { type: "HUMAN_REJECTED", reason: decision.reason });
+        } else {
+          stateMachine.apply(stepId, { type: "HUMAN_REQUESTED_CHANGES" });
+          feedback = { kind: "human_feedback", feedback: decision.feedback };
+        }
+        await persistTaskState(opts.taskId, stateMachine, root);
+        continue;
+      }
+
+      // "done" or "failed" — the loop's only exit under normal operation.
       return stateMachine.getState();
     }
-
-    const reviewResult = await runReviewPhase({
-      taskId: opts.taskId,
-      plan,
-      diff,
-      rubricText,
-      stateMachine,
-      reviewerClient: opts.reviewerClient,
-    });
-    await writeTaskArtifact(opts.taskId, "review.json", reviewResult, root);
-    await persistTaskState(opts.taskId, stateMachine, root);
-    return stateMachine.getState();
   } catch (error) {
     // Guardrails inside the phase functions already apply STAGE_FAILED
     // for the failure modes they know about. Anything else (an agent call

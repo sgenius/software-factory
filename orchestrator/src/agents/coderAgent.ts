@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import { REPO_ROOT } from "../repoRoot.js";
-import type { Plan } from "../types.js";
+import type { CoderFeedback, Plan } from "../types.js";
 
 const CODER_SYSTEM_PROMPT_PATH = path.join(REPO_ROOT, "agents/coder/system-prompt.md");
 
@@ -15,6 +15,8 @@ export interface CoderAgentInput {
   plan: Plan;
   repoDir: string;
   rubricText: string;
+  /** Set on a fix cycle — what sent this task back to Coder. Absent on the first pass. */
+  priorFeedback?: CoderFeedback;
 }
 
 export interface CoderAgentResult {
@@ -38,11 +40,38 @@ export class CoderAgentError extends Error {
 }
 
 function buildCoderPrompt(input: CoderAgentInput): string {
-  return [
+  const sections = [
     `Task ID: ${input.taskId}`,
     `Plan:\n${JSON.stringify(input.plan, null, 2)}`,
     `Legibility rubric:\n${input.rubricText}`,
-  ].join("\n\n");
+  ];
+
+  if (input.priorFeedback) {
+    sections.push(`This is a fix cycle.\n${describeFeedback(input.priorFeedback)}`);
+  }
+
+  return sections.join("\n\n");
+}
+
+function describeFeedback(feedback: CoderFeedback): string {
+  switch (feedback.kind) {
+    case "test_failure": {
+      const failures = feedback.testResult.results
+        .filter((result) => !result.passed)
+        .map((result) => `- ${result.criterionId}: ${result.reason ?? "no reason given"}`)
+        .join("\n");
+      return `The Tester reported these failing acceptance criteria:\n${failures}`;
+    }
+    case "review_findings": {
+      const blocking = feedback.reviewResult.findings
+        .filter((finding) => finding.severity === "blocking")
+        .map((finding) => `- ${finding.file}:${finding.line} — ${finding.summary}`)
+        .join("\n");
+      return `The Reviewer flagged these blocking findings:\n${blocking}`;
+    }
+    case "human_feedback":
+      return `A human reviewer requested changes:\n${feedback.feedback}`;
+  }
 }
 
 // Minimal local shape for the terminal SDK "result" message — narrower

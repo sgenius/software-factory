@@ -73,6 +73,32 @@ describe("fix/review cycles", () => {
   });
 });
 
+describe("HUMAN_REJECTED reason", () => {
+  function makeMachineAtHumanGate(): TaskStateMachine {
+    const m = makeMachine();
+    m.apply("s1", { type: "PLAN_READY" });
+    m.apply("s2", { type: "CODE_READY" });
+    m.apply("s3", { type: "TESTS_PASSED" });
+    m.apply("s4", { type: "REVIEW_CLEAN" });
+    return m;
+  }
+
+  it("carries a custom reason into failureReason when given", () => {
+    const m = makeMachineAtHumanGate();
+    const state = m.apply("s5", { type: "HUMAN_REJECTED", reason: "not what we asked for" });
+
+    expect(state.stage).toBe("failed");
+    expect(state.failureReason).toBe("not what we asked for");
+  });
+
+  it("defaults to \"human_rejected\" when no reason is given", () => {
+    const m = makeMachineAtHumanGate();
+    const state = m.apply("s5", { type: "HUMAN_REJECTED" });
+
+    expect(state.failureReason).toBe("human_rejected");
+  });
+});
+
 describe("budget guardrail", () => {
   it("force-fails the task once spend exceeds the budget, regardless of stage", () => {
     const m = makeMachine({ maxTokens: 100, maxCostUsd: 1 });

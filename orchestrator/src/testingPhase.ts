@@ -49,9 +49,12 @@ export async function runTestingPhase(opts: TestingPhaseOptions): Promise<Testin
     commandResult,
   });
 
+  // Cycle-suffixed stepId: see the comment on the same pattern in
+  // codingPhase.ts — this phase can now run more than once per task.
+  const cycle = opts.stateMachine.getState().fixReviewCycles;
   const allPassed = testResult.results.every((result) => result.passed);
   const event = allPassed ? { type: "TESTS_PASSED" as const } : { type: "TESTS_FAILED" as const };
-  opts.stateMachine.apply(`${opts.taskId}:testing:result`, event);
+  opts.stateMachine.apply(`${opts.taskId}:testing:result:cycle-${cycle}`, event);
 
   return { testResult, diff };
 }
