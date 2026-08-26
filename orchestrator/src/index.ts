@@ -25,3 +25,16 @@ export {
   runPlanningPhase,
   PlanningPhaseFailedError,
 } from "./planningPhase.js";
+export {
+  type ProjectConfig,
+  parseProjectConfig,
+  loadProjectConfig,
+  ProjectConfigError,
+} from "./projectConfig.js";
+export {
+  DEFAULT_WORKSPACE_ROOT,
+  taskWorkspacePath,
+  ensureTaskWorkspace,
+  writeTaskArtifact,
+} from "./workspace.js";
+export { type RunTaskOptions, runTask } from "./taskRunner.js";

@@ -6,13 +6,15 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p orchestrator/tsconfig.build.json",
+    "task:plan": "npm run build && node orchestrator/dist/cli.js",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
     "ajv": "^8.17.1",
-    "ajv-formats": "^3.0.1"
+    "ajv-formats": "^3.0.1",
+    "yaml": "^2.6.0"
   },
   "devDependencies": {
     "@types/node": "^22.9.0",
