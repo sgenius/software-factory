@@ -13,12 +13,15 @@ const baseProjectConfig: ProjectConfig = {
   name: "test-project",
   repo: {},
   rubric: { path: "rubrics/legibility-default.md" },
+  stack: { testCommand: 'node -e "process.exit(0)"' },
   budget: {
     maxTokensPerTask: 1000,
     maxCostUsdPerTask: 1,
     maxFixReviewCycles: 1,
     maxPlanningQuestionRounds: 1,
     maxCoderTurns: 1,
+    maxTesterTurns: 1,
+    testCommandTimeoutMs: 10_000,
   },
 };
 

@@ -12,12 +12,17 @@ export interface ProjectConfig {
   rubric: {
     path: string;
   };
+  stack: {
+    testCommand: string;
+  };
   budget: {
     maxTokensPerTask: number;
     maxCostUsdPerTask: number;
     maxFixReviewCycles: number;
     maxPlanningQuestionRounds: number;
     maxCoderTurns: number;
+    maxTesterTurns: number;
+    testCommandTimeoutMs: number;
   };
 }
 
@@ -66,6 +71,11 @@ export function parseProjectConfig(yamlText: string): ProjectConfig {
   const repo = (raw.repo as Record<string, unknown> | undefined) ?? {};
   const rubric = (raw.rubric as Record<string, unknown> | undefined) ?? {};
 
+  const stack = raw.stack as Record<string, unknown> | undefined;
+  if (typeof stack !== "object" || stack === null) {
+    throw new ProjectConfigError('Project config is missing the "stack" section');
+  }
+
   return {
     name,
     repo: {
@@ -74,6 +84,9 @@ export function parseProjectConfig(yamlText: string): ProjectConfig {
     },
     rubric: {
       path: rubric.path === undefined ? DEFAULT_RUBRIC_PATH : requireString(rubric.path, "rubric.path"),
+    },
+    stack: {
+      testCommand: requireString(stack.testCommand, "stack.testCommand"),
     },
     budget: {
       maxTokensPerTask: requireNumber(budget.maxTokensPerTask, "budget.maxTokensPerTask"),
@@ -84,6 +97,8 @@ export function parseProjectConfig(yamlText: string): ProjectConfig {
         "budget.maxPlanningQuestionRounds",
       ),
       maxCoderTurns: requireNumber(budget.maxCoderTurns, "budget.maxCoderTurns"),
+      maxTesterTurns: requireNumber(budget.maxTesterTurns, "budget.maxTesterTurns"),
+      testCommandTimeoutMs: requireNumber(budget.testCommandTimeoutMs, "budget.testCommandTimeoutMs"),
     },
   };
 }

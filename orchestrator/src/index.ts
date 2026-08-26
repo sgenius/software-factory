@@ -4,6 +4,8 @@ export {
   validatePlan,
   validatePlannerTurn,
   validateReviewFinding,
+  validateReviewResult,
+  validateTestResult,
   validateTaskState,
   assertValid,
   SchemaValidationError,
@@ -28,6 +30,27 @@ export {
   loadCoderSystemPrompt,
 } from "./agents/coderAgent.js";
 export {
+  type TestAuthorAgentInput,
+  type TestAuthorResult,
+  type TestAuthorAgentClient,
+  ClaudeTestAuthorAgentClient,
+  TestAuthorAgentError,
+  loadTesterSystemPrompt,
+} from "./agents/testAuthorAgent.js";
+export {
+  type TestResultAgentInput,
+  type TestResultAgentClient,
+  ClaudeTestResultAgentClient,
+  TestResultParseError,
+} from "./agents/testResultAgent.js";
+export {
+  type ReviewerAgentInput,
+  type ReviewerAgentClient,
+  ClaudeReviewerAgentClient,
+  ReviewResultParseError,
+  loadReviewerSystemPrompt,
+} from "./agents/reviewerAgent.js";
+export {
   type PlanningTranscriptEntry,
   type PlanningPhaseOptions,
   runPlanningPhase,
@@ -38,6 +61,13 @@ export {
   type CodingPhaseResult,
   runCodingPhase,
 } from "./codingPhase.js";
+export {
+  type TestingPhaseOptions,
+  type TestingPhaseResult,
+  runTestingPhase,
+} from "./testingPhase.js";
+export { type ReviewPhaseOptions, runReviewPhase } from "./reviewPhase.js";
+export { type TestCommandResult, runProjectTestCommand } from "./testExecution.js";
 export {
   type ProjectConfig,
   parseProjectConfig,

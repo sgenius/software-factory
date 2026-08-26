@@ -1,5 +1,4 @@
 import type { TaskStateMachine } from "./stateMachine.js";
-import { captureDiff } from "./repoWorkspace.js";
 import type { CoderAgentClient } from "./agents/coderAgent.js";
 import type { Plan } from "./types.js";
 
@@ -13,15 +12,16 @@ export interface CodingPhaseOptions {
 }
 
 export interface CodingPhaseResult {
-  diff: string;
   summary: string;
 }
 
 /**
- * Runs the Coder once against the plan, captures its changes as a diff,
- * and applies CODE_READY. Errors from coderClient.runCoding are left to
- * propagate — taskRunner.ts's generic catch-all marks the task failed the
- * same way it already does for planning errors.
+ * Runs the Coder once against the plan and applies CODE_READY. The diff
+ * isn't captured here — Tester's Author turn (testingPhase.ts) also edits
+ * repoDir, so the diff isn't final until that's done too; captureDiff runs
+ * there instead. Errors from coderClient.runCoding are left to propagate —
+ * taskRunner.ts's generic catch-all marks the task failed the same way it
+ * already does for planning errors.
  */
 export async function runCodingPhase(opts: CodingPhaseOptions): Promise<CodingPhaseResult> {
   const result = await opts.coderClient.runCoding({
@@ -31,12 +31,7 @@ export async function runCodingPhase(opts: CodingPhaseOptions): Promise<CodingPh
     rubricText: opts.rubricText,
   });
 
-  const diff = await captureDiff(opts.repoDir);
-  if (diff.trim().length === 0) {
-    console.warn(`Coder produced no changes for task ${opts.taskId}.`);
-  }
-
   opts.stateMachine.apply(`${opts.taskId}:coding:code-ready`, { type: "CODE_READY" });
 
-  return { diff, summary: result.summary };
+  return { summary: result.summary };
 }

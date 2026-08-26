@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://software-factory.local/schemas/review-result.schema.json",
+  "title": "ReviewResult",
+  "description": "Reviewer's structured output: zero or more findings plus a confidence signal (CLAUDE.md 'Human-in-the-Loop -> Automation Path').",
+  "type": "object",
+  "required": ["taskId", "findings", "confidence"],
+  "additionalProperties": false,
+  "properties": {
+    "taskId": { "type": "string" },
+    "findings": {
+      "type": "array",
+      "items": { "$ref": "https://software-factory.local/schemas/review-finding.schema.json" }
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "How confident the Reviewer is that its findings are accurate, especially any blocking ones."
+    }
+  }
+}

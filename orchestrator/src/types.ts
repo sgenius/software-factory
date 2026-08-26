@@ -96,3 +96,21 @@ export interface PlannerAnswer {
 export type PlannerTurn =
   | { taskId: string; type: "questions"; questions: PlannerQuestion[] }
   | { taskId: string; type: "plan"; plan: Plan };
+
+export interface TestCriterionResult {
+  criterionId: string;
+  passed: boolean;
+  reason?: string;
+}
+
+export interface TestResult {
+  taskId: string;
+  results: TestCriterionResult[];
+  testsRun: string[];
+}
+
+export interface ReviewResult {
+  taskId: string;
+  findings: ReviewFinding[];
+  confidence: number;
+}

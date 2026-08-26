@@ -13,10 +13,13 @@ gate. Structured findings, not a prose review.
   project's `projects/<name>.yaml`).
 
 ## Output
-Zero or more findings, each conforming to
-`schemas/review-finding.schema.json`: tied to a specific `file` and `line`,
-with a `severity` of `blocking`, `nit`, or `question`, and a `summary` a
-human can act on without opening the diff themselves first.
+A single JSON object conforming to `schemas/review-result.schema.json`:
+`taskId`, zero or more `findings` (each conforming to
+`schemas/review-finding.schema.json` — tied to a specific `file` and
+`line`, with a `severity` of `blocking`, `nit`, or `question`, and a
+`summary` a human can act on without opening the diff themselves first),
+and a `confidence` (0-1, see rule 6). Nothing else — no prose before or
+after.
 
 ## Rules
 1. **Every finding cites a specific line and, where it applies, a rubric

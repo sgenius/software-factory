@@ -35,6 +35,11 @@ budget:
   # Cap on the Coder's agentic tool-use turns per task (Claude Agent SDK's
   # maxTurns).
   maxCoderTurns: 20
+  # Cap on the Tester's Author-turn agentic tool-use turns per task.
+  maxTesterTurns: 20
+  # How long the orchestrator waits for stack.testCommand to finish before
+  # treating it as hung and failing the task.
+  testCommandTimeoutMs: 300000
 
 humanApproval:
   # phase1: every task stops at the human gate.
