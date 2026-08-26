@@ -1,0 +1,16 @@
+{
+  "id": "golden-001-add-input-validation",
+  "description": "Canonical golden task: add validation to a single existing function. Small, unambiguous, single-file scope — a baseline sanity check for the pipeline, not a stress test.",
+  "requirement": "In the target project's `parseAge` function, reject negative numbers and non-integers by throwing a `RangeError` instead of returning a bad value.",
+  "knownGood": {
+    "filesToTouch": ["src/parseAge.ts"],
+    "acceptanceCriteria": [
+      "parseAge(-1) throws RangeError",
+      "parseAge(3.5) throws RangeError",
+      "parseAge(30) returns 30"
+    ],
+    "expectedReviewFindings": {
+      "blocking": 0
+    }
+  }
+}

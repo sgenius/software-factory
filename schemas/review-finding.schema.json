@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://software-factory.local/schemas/review-finding.schema.json",
+  "title": "ReviewFinding",
+  "description": "A single Reviewer finding, tied to a specific file and line.",
+  "type": "object",
+  "required": ["taskId", "file", "line", "severity", "summary"],
+  "additionalProperties": false,
+  "properties": {
+    "taskId": { "type": "string" },
+    "file": { "type": "string" },
+    "line": { "type": "integer", "minimum": 1 },
+    "endLine": { "type": "integer", "minimum": 1 },
+    "severity": {
+      "type": "string",
+      "enum": ["blocking", "nit", "question"],
+      "description": "blocking = must fix before merge. nit = optional cleanup. question = needs a human/author answer."
+    },
+    "summary": { "type": "string" },
+    "rationale": { "type": "string" },
+    "rubricRef": {
+      "type": "string",
+      "description": "Section of rubrics/legibility-default.md (or a project override) this finding relates to, if any."
+    }
+  }
+}

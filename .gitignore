@@ -1,0 +1,9 @@
+node_modules/
+orchestrator/dist/
+*.log
+.env
+.env.*
+
+# Ephemeral per-task working state (see CLAUDE.md "Repository Structure")
+workspace/*
+!workspace/.gitkeep

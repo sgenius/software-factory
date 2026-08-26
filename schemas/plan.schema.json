@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://software-factory.local/schemas/plan.schema.json",
+  "title": "Plan",
+  "description": "Planner output. The contract every downstream agent (Coder, Tester, Reviewer) works against.",
+  "type": "object",
+  "required": ["taskId", "requirement", "tasks", "filesToTouch", "acceptanceCriteria"],
+  "additionalProperties": false,
+  "properties": {
+    "taskId": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_-]+$",
+      "description": "Deterministic task ID, stable across retries of the same requirement."
+    },
+    "requirement": {
+      "type": "string",
+      "description": "The original requirement/ticket text this plan addresses."
+    },
+    "tasks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "description"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "description": { "type": "string" },
+          "dependsOn": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "IDs of other tasks in this plan that must land first."
+          }
+        }
+      }
+    },
+    "filesToTouch": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "reason"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "acceptanceCriteria": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "description"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "description": {
+            "type": "string",
+            "description": "Falsifiable — the Tester must be able to check this mechanically."
+          }
+        }
+      }
+    },
+    "notes": {
+      "type": "string",
+      "description": "Assumptions the Planner made to resolve ambiguity in the requirement, since only the review gate has a human in phase 1."
+    }
+  }
+}

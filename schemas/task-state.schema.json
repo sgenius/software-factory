@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://software-factory.local/schemas/task-state.schema.json",
+  "title": "TaskState",
+  "description": "The orchestrator's end-to-end state for one task. This is the only place end-to-end state lives.",
+  "type": "object",
+  "required": [
+    "taskId",
+    "stage",
+    "status",
+    "fixReviewCycles",
+    "maxFixReviewCycles",
+    "escalated",
+    "spend",
+    "budget",
+    "history"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "taskId": { "type": "string" },
+    "stage": {
+      "type": "string",
+      "enum": ["planning", "coding", "testing", "review", "human_gate", "done", "failed"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["in_progress", "done", "failed"]
+    },
+    "fixReviewCycles": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of times this task has looped back to coding from testing/review/human_gate."
+    },
+    "maxFixReviewCycles": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Guardrail: once fixReviewCycles reaches this, further fix requests escalate to human_gate instead of looping again."
+    },
+    "escalated": {
+      "type": "boolean",
+      "description": "True once the cycle cap forced escalation to a human, regardless of Reviewer confidence."
+    },
+    "spend": {
+      "type": "object",
+      "required": ["tokens", "costUsd"],
+      "additionalProperties": false,
+      "properties": {
+        "tokens": { "type": "integer", "minimum": 0 },
+        "costUsd": { "type": "number", "minimum": 0 }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "required": ["maxTokens", "maxCostUsd"],
+      "additionalProperties": false,
+      "properties": {
+        "maxTokens": { "type": "integer", "minimum": 0 },
+        "maxCostUsd": { "type": "number", "minimum": 0 }
+      }
+    },
+    "failureReason": { "type": "string" },
+    "history": {
+      "type": "array",
+      "description": "Append-only audit log of every transition applied to this task.",
+      "items": {
+        "type": "object",
+        "required": ["stepId", "stage", "event", "timestamp"],
+        "additionalProperties": false,
+        "properties": {
+          "stepId": {
+            "type": "string",
+            "description": "Idempotency key for the step that produced this event."
+          },
+          "stage": { "type": "string" },
+          "event": { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}

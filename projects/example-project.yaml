@@ -1,0 +1,38 @@
+# Template project config. Copy to `<your-project-name>.yaml` and fill in.
+# This is the only thing that varies per target project (CLAUDE.md
+# "Applying the Factory to a Project").
+
+name: example-project
+
+repo:
+  # For an existing project: where to get it from before scaffolding
+  # workspace/<task-id>/repo/. For a brand-new project: omit `source` and
+  # the orchestrator scaffolds directly into that path instead.
+  source: git@github.com:example-org/example-project.git
+  defaultBranch: main
+
+stack:
+  language: typescript
+  testCommand: npm test
+  lintCommand: npm run lint
+
+rubric:
+  # Path to the rubric this project's Coder/Reviewer read. Defaults to the
+  # shared default; point at a project-specific file to override rules.
+  path: rubrics/legibility-default.md
+  overrides: {}
+  # Example override:
+  # overrides:
+  #   maxFunctionLines: 60
+
+budget:
+  maxTokensPerTask: 2000000
+  maxCostUsdPerTask: 20
+  maxFixReviewCycles: 3
+
+humanApproval:
+  # phase1: every task stops at the human gate.
+  # phase2: auto-approve when Reviewer findings are clean and confidence
+  #         is high; human is the fallback for low-confidence cases.
+  mode: phase1
+  autoApproveConfidenceThreshold: 0.9
