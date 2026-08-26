@@ -32,6 +32,9 @@ budget:
   # How many times the Planner may ask the human clarifying questions
   # (agents/planner/system-prompt.md rule 4) before the task fails.
   maxPlanningQuestionRounds: 3
+  # Cap on the Coder's agentic tool-use turns per task (Claude Agent SDK's
+  # maxTurns).
+  maxCoderTurns: 20
 
 humanApproval:
   # phase1: every task stops at the human gate.

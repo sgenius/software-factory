@@ -1,18 +1,11 @@
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import path from "node:path";
 import Anthropic from "@anthropic-ai/sdk";
 import { assertValid, validatePlannerTurn } from "../schemaValidation.js";
+import { REPO_ROOT } from "../repoRoot.js";
 import type { PlannerAnswer, PlannerTurn } from "../types.js";
 
-// orchestrator/src/agents/plannerAgent.ts -> ../../../agents (repo root,
-// two levels up from orchestrator/). Same relative depth from
-// orchestrator/dist/agents after build (tsconfig.build.json's rootDir is
-// orchestrator/src, so the agents/ subfolder is preserved 1:1 under dist).
-const PLANNER_SYSTEM_PROMPT_PATH = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../../../agents/planner/system-prompt.md",
-);
+const PLANNER_SYSTEM_PROMPT_PATH = path.join(REPO_ROOT, "agents/planner/system-prompt.md");
 
 export function loadPlannerSystemPrompt(): string {
   return readFileSync(PLANNER_SYSTEM_PROMPT_PATH, "utf-8");

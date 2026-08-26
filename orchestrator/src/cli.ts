@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { loadProjectConfig } from "./projectConfig.js";
 import { ClaudePlannerAgentClient } from "./agents/plannerAgent.js";
+import { ClaudeCoderAgentClient } from "./agents/coderAgent.js";
 import { CliHumanInteractionChannel } from "./humanInteraction.js";
 import { runTask } from "./taskRunner.js";
 import { taskWorkspacePath } from "./workspace.js";
@@ -36,6 +37,7 @@ async function main(): Promise<void> {
   const projectConfig = loadProjectConfig(args.project);
 
   const plannerClient = new ClaudePlannerAgentClient(new Anthropic());
+  const coderClient = new ClaudeCoderAgentClient(projectConfig.budget.maxCoderTurns);
   const interactionChannel = new CliHumanInteractionChannel();
 
   const taskState = await runTask({
@@ -43,15 +45,18 @@ async function main(): Promise<void> {
     requirement: args.requirement,
     projectConfig,
     plannerClient,
+    coderClient,
     interactionChannel,
   });
 
-  console.log(`\nPlanning finished for task "${args.taskId}".`);
-  console.log(`Plan written to: ${taskWorkspacePath(args.taskId)}/plan.json`);
+  const taskDir = taskWorkspacePath(args.taskId);
+  console.log(`\nCoding finished for task "${args.taskId}".`);
+  console.log(`Plan: ${taskDir}/plan.json`);
+  console.log(`Diff: ${taskDir}/diff.patch`);
   console.log(`Task state: stage="${taskState.stage}", status="${taskState.status}".`);
-  if (taskState.stage === "coding") {
+  if (taskState.stage === "testing") {
     console.log(
-      'The task now sits in the "coding" stage awaiting a Coder implementation, which isn\'t wired up yet.',
+      'The task now sits in the "testing" stage awaiting a Tester implementation, which isn\'t wired up yet.',
     );
   }
 }

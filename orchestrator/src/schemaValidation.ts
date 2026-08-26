@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { Ajv2020 } from "ajv/dist/2020.js";
 import type { ValidateFunction } from "ajv";
+import { REPO_ROOT } from "./repoRoot.js";
 
 // ajv-formats' CJS/ESM dual-export shape doesn't type correctly through a
 // plain `import addFormats from "ajv-formats"` under NodeNext resolution
@@ -11,13 +11,7 @@ import type { ValidateFunction } from "ajv";
 const addFormats: typeof import("ajv-formats").default =
   createRequire(import.meta.url)("ajv-formats");
 
-// orchestrator/src/schemaValidation.ts -> ../../schemas (repo root, one
-// level up from orchestrator/). Same relative depth from orchestrator/dist
-// after build, so this holds for both ts-node/tsx and compiled output.
-const SCHEMAS_DIR = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../../schemas",
-);
+const SCHEMAS_DIR = path.join(REPO_ROOT, "schemas");
 
 // Our schemas declare "$schema": draft/2020-12, which the plain Ajv export
 // (draft-07 meta-schema) doesn't know how to validate against.
